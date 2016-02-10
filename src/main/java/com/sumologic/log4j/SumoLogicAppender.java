@@ -28,6 +28,7 @@ package com.sumologic.log4j;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
@@ -55,6 +56,7 @@ public class SumoLogicAppender extends AppenderSkeleton {
   private int socketTimeout = 60000;
 
   private HttpClient httpClient = null;
+  private SchemeRegistry registry;
 
   public void setUrl(String url) {
     this.url = url;
@@ -68,12 +70,22 @@ public class SumoLogicAppender extends AppenderSkeleton {
     this.socketTimeout = socketTimeout;
   }
 
+  public void setSchemeRegistry(SchemeRegistry registry) {
+    this.registry = registry;
+  }
+
   @Override
   public void activateOptions() {
     HttpParams params = new BasicHttpParams();
     HttpConnectionParams.setConnectionTimeout(params, connectionTimeout);
     HttpConnectionParams.setSoTimeout(params, socketTimeout);
-    httpClient = new DefaultHttpClient(new ThreadSafeClientConnManager(), params);
+    ThreadSafeClientConnManager connectionManager;
+    if(registry == null) {
+      connectionManager = new ThreadSafeClientConnManager();
+    } else {
+      connectionManager = new ThreadSafeClientConnManager(params, registry);
+    }
+    httpClient = new DefaultHttpClient(connectionManager, params);
   }
 
   @Override

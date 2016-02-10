@@ -135,7 +135,9 @@ public class SumoLogicAppender extends AppenderSkeleton {
     HttpPost post = null;
     try {
       post = new HttpPost(url);
-      post.setEntity(new StringEntity(log, HTTP.PLAIN_TEXT_TYPE, HTTP.UTF_8));
+      StringEntity stringEntity = new StringEntity(log, HTTP.UTF_8);
+      stringEntity.setContentEncoding(HTTP.PLAIN_TEXT_TYPE);
+      post.setEntity(stringEntity);
       HttpResponse response = httpClient.execute(post);
       int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode != 200) {

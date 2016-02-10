@@ -25,6 +25,7 @@
  */
 package com.sumologic.log4j;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -36,13 +37,13 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Layout;
 import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.LoggingEvent;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Appender that sends log messages to Sumo Logic.
@@ -144,10 +145,35 @@ public class SumoLogicAppender extends AppenderSkeleton {
         LogLog.warn(String.format("Received HTTP error from Sumo Service: %d", statusCode));
       }
       //need to consume the body if you want to re-use the connection.
-      EntityUtils.consume(response.getEntity());
+      consume(response.getEntity());
     } catch (IOException e) {
       LogLog.warn("Could not send log to Sumo Logic", e);
       try { post.abort(); } catch (Exception ignore) {}
+    }
+  }
+
+  /**
+   *
+   * Ensures that the entity content is fully consumed and the content stream, if exists,
+   * is closed.
+   *
+   * @param entity the entity to consume.
+   * @throws IOException if an error occurs reading the input stream
+   *
+   */
+  private static void consume(HttpEntity entity) throws IOException {
+    /*
+     * Copied from {@link org.apache.http.util.EntityUtils}. Licensed under the Apache License,
+     * Version 2.0. A copy of the license can be found at http://www.apache.org/licenses/LICENSE-2.0
+     */
+    if (entity == null) {
+      return;
+    }
+    if (entity.isStreaming()) {
+      final InputStream instream = entity.getContent();
+      if (instream != null) {
+        instream.close();
+      }
     }
   }
 }
